@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="mn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>for давталт ба массив: алхам алхмаар</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#1b2333;--mut:#667085;--ac:#2557d6;--ok:#15803d;--bad:#b91c1c;--line:#dfe3ec}
+*{box-sizing:border-box}
+body{margin:0;padding:14px;font:15px/1.5 system-ui,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+h1{font-size:20px;margin:0 0 2px}.sub{color:var(--mut);margin:0 0 10px;font-size:13px}
+button{font:inherit;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+button.on,button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tabs,.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.tabs{margin-bottom:10px}.bar{margin-top:8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:780px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+#task{margin:0 0 8px;font-weight:600}
+#code,#view{width:100%;height:290px;font:14px/1.6 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:8px;padding:8px;overflow:auto;white-space:pre;background:#fbfcff;tab-size:4;resize:vertical}
+#view{display:none}.ln{display:block;padding:0 4px;border-radius:4px}.ln.cur{background:#fde68a}.ln.err{background:#fecaca}
+h3{font-size:14px;margin:12px 0 4px;color:var(--mut);font-weight:600}h3:first-child{margin-top:0}
+.arr{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.cell{text-align:center;min-width:50px}.pt{height:20px;color:var(--ac);font-weight:700;font-size:13px}
+.box{border:2px solid #98a2b3;border-radius:8px;height:44px;line-height:40px;font-weight:700;font-size:18px;background:#fff}
+.cell.read .box{background:#fed7aa;border-color:#ea580c}.cell.ptr .box{border-color:var(--ac)}
+.cell.ghost .box{border-style:dashed;color:#98a2b3;background:none}.idx{font-size:12px;color:var(--mut)}
+.vars{display:flex;gap:8px;flex-wrap:wrap;min-height:34px}.v{border:1px solid var(--line);border-radius:8px;padding:3px 10px}.v b{color:var(--ac)}
+#out{font:14px ui-monospace,Consolas,monospace;background:#18202f;color:#e8ecf4;border-radius:8px;padding:8px;min-height:38px;white-space:pre-wrap}
+#msg{min-height:46px;margin-top:8px}.ok{color:var(--ok)}.bad{color:var(--bad)}.mut{color:var(--mut)}
+</style></head><body>
+<h1>for давталт ба массив: алхам алхмаар</h1>
+<p class="sub">Хялбаршуулсан C++: main дотор бичих код. for, if, cout, + − * / % дэмжинэ. Бодит C++ биш тул #include, main() бичих шаардлагагүй.</p>
+<div class="tabs" id="tabs"></div>
+<div class="grid">
+ <div class="card">
+  <p id="task"></p>
+  <textarea id="code" spellcheck="false" aria-label="Код"></textarea>
+  <div id="view" aria-live="polite"></div>
+  <div class="bar">
+   <button class="p" onclick="play()">▶ / ⏸ Ажиллуулах</button>
+   <button onclick="step()">Алхам</button>
+   <button onclick="reset()">↺ Засах</button>
+   <button onclick="$('hint').textContent=LV[L].h">Санаа</button>
+   <label class="mut">Хурд <input type="range" id="spd" min="150" max="1500" value="700" style="direction:rtl;vertical-align:middle" oninput="if(timer){stop();play()}"></label>
+  </div>
+  <p id="hint" class="mut"></p>
+ </div>
+ <div class="card">
+  <h3>Массив</h3><div id="arr"></div>
+  <h3>Хувьсагчид</h3><div class="vars" id="vars"></div>
+  <h3>Дэлгэцийн гаралт</h3><div id="out"></div>
+  <div id="msg" aria-live="polite"></div>
+ </div>
+</div>
+<script>
+class E extends Error{constructor(m,l){super(m);this.line=l}}
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const LV=[
+{n:'Demo: нийлбэр',t:'Багшийн жишээ: массивын бүх элементийн нийлбэрийг олно. «Алхам» товчийг дарж i болон sum хэрхэн өөрчлөгдөхийг ажигла.',exp:null,h:'Давталт бүрд i нэгээр нэмэгдэж, a[i] нь sum-д нэмэгдэнэ.',
+code:'int a[5] = {4, 8, 15, 16, 23};\nint sum = 0;\nfor (int i = 0; i < 5; i++) {\n    sum += a[i];\n}\ncout << sum;'},
+{n:'Түвшин 1: Хэвлэх',t:'Даалгавар: a массивын бүх элементийг зайгаар тусгаарлан хэвл. «???» хэсгүүдийг бөглө.',exp:'4 8 15 16 23',h:'Давталт i < 5 хүртэл явна. Элемент нь a[i].',
+code:'int a[5] = {4, 8, 15, 16, 23};\nfor (int i = 0; i < ???; i++) {\n    cout << ??? << " ";\n}'},
+{n:'Түвшин 2: Нийлбэр',t:'Даалгавар: давталтаар бүх элементийг sum-д нэмж, нийлбэрийг хэвл.',exp:'66',h:'sum += a[i];',
+code:'int a[5] = {4, 8, 15, 16, 23};\nint sum = 0;\nfor (int i = 0; i < 5; i++) {\n    ???\n}\ncout << sum;'},
+{n:'Түвшин 3: Хамгийн их',t:'Даалгавар: хамгийн их утгыг ол. max-аас том элемент олдвол max-д онооно.',exp:'19',h:'if (a[i] > max) { max = a[i]; }',
+code:'int a[5] = {7, 3, 19, 4, 11};\nint max = a[0];\nfor (int i = 1; i < 5; i++) {\n    if (??? > max) {\n        max = ???;\n    }\n}\ncout << max;'}];
+
+function tok(src){const T=[],re=/(\s+)|(\/\/.*)|(\d+)|([A-Za-z_]\w*)|("(?:[^"\\\n]|\\.)*")|(<<|\+\+|--|\+=|-=|\*=|<=|>=|==|!=|&&|\|\||[-+*\/%<>=!(){}\[\];,])|(.)/g;let m,line=1;
+ while((m=re.exec(src))){if(m[1]){line+=(m[1].match(/\n/g)||[]).length;continue}if(m[2])continue;
+  if(m[7])throw new E(m[7]==='?'?'«???» хэсгийг өөрийн кодоор бөглө':'Танигдаагүй тэмдэгт: '+m[7],line);
+  T.push({k:m[3]?'n':m[4]?'id':m[5]?'s':'p',v:m[3]?+m[3]:m[5]?m[5].slice(1,-1).replace(/\\n/g,'\n'):m[4]||m[6],line})}
+ return T}
+
+function parse(T){let p=0;const isP=v=>T[p]&&T[p].k==='p'&&T[p].v===v,isId=v=>T[p]&&T[p].k==='id'&&T[p].v===v,
+ ln=()=>T[p]?T[p].line:(T.length?T[T.length-1].line:1),
+ ex=v=>{if(!isP(v))throw new E("'"+v+"' байх ёстой",ln());return T[p++]},
+ id=()=>{if(!T[p]||T[p].k!=='id')throw new E('Нэр байх ёстой',ln());return T[p++].v},
+ PR=[['||'],['&&'],['==','!='],['<','>','<=','>='],['+','-'],['*','/','%']];
+ function bin(i){if(i===PR.length)return un();let l=bin(i+1);while(T[p]&&T[p].k==='p'&&PR[i].includes(T[p].v)){const o=T[p++].v;l={t:'b',o,l,r:bin(i+1)}}return l}
+ function un(){if(isP('-')){p++;return{t:'u',o:'-',e:un()}}if(isP('!')){p++;return{t:'u',o:'!',e:un()}}return pr()}
+ function pr(){const t=T[p];if(!t)throw new E('Илэрхийлэл дутуу',ln());
+  if(t.k==='n'||t.k==='s'){p++;return{t:t.k,v:t.v}}
+  if(t.k==='id'){p++;if(isP('[')){p++;const i=bin(0);ex(']');return{t:'a',n:t.v,i}}return{t:'v',n:t.v}}
+  if(isP('(')){p++;const e=bin(0);ex(')');return e}
+  throw new E("Буруу тэмдэгт '"+t.v+"'",t.line)}
+ const cond=()=>{const a=p,c=bin(0);c.tk=T.slice(a,p);return c};
+ function simple(semi){const t=T[p],n=id();let o,e=null;
+  if(isP('++')||isP('--'))o=T[p++].v;else if(T[p]&&['=','+=','-=','*='].includes(T[p].v)){o=T[p++].v;e=bin(0)}else throw new E("'=' эсвэл '++' байх ёстой",ln());
+  if(semi)ex(';');return{t:'as',n,o,e,line:t.line}}
+ function body(){if(isP('{')){p++;const b=[];while(!isP('}')){if(!T[p])throw new E("'}' дутуу",ln());b.push(st())}p++;return b}return[st()]}
+ function st(){const t=T[p];if(!t)throw new E('Код дутуу',ln());
+  if(isId('int')){p++;const n=id();
+   if(isP('[')){p++;if(!isP(']'))bin(0);ex(']');const v=[];if(isP('=')){p++;ex('{');while(!isP('}')){v.push(bin(0));if(isP(','))p++}p++}ex(';');return{t:'da',n,v,line:t.line}}
+   let e=null;if(isP('=')){p++;e=bin(0)}ex(';');return{t:'dv',n,e,line:t.line}}
+  if(isId('for')){p++;ex('(');let ini;if(isId('int')){p++;const n=id();ex('=');ini={t:'dv',n,e:bin(0),line:t.line}}else ini=simple(false);
+   ex(';');const c=cond();ex(';');const u=simple(false);ex(')');return{t:'for',ini,c,u,b:body(),line:t.line}}
+  if(isId('if')){p++;ex('(');const c=cond();ex(')');const b=body();let e=[];if(isId('else')){p++;e=body()}return{t:'if',c,b,e,line:t.line}}
+  if(isId('cout')){p++;const l=[];while(isP('<<')){p++;l.push(bin(0))}ex(';');return{t:'out',l,line:t.line}}
+  if(isId('return')){p++;if(!isP(';'))bin(0);ex(';');return{t:'ret',line:t.line}}
+  if(isP('{'))return{t:'blk',b:body(),line:t.line};
+  return simple(true)}
+ const P=[];while(p<T.length)P.push(st());return P}
+
+function* run(P){const V={},A={};let out='',hi=null,lv=null,n=0,cl=0;
+ const snap=(line,msg)=>({line,msg,out,hi,lv,v:JSON.parse(JSON.stringify(V)),a:JSON.parse(JSON.stringify(A))});
+ const ev=e=>{switch(e.t){case'n':case's':return e.v;
+  case'v':if(e.n==='endl')return'\n';if(!(e.n in V))throw new E(e.n+' хувьсагч зарлагдаагүй байна',cl);if(V[e.n]===null)throw new E(e.n+' хувьсагчид анхны утга өгөөгүй байна (жишээ нь = 0)',cl);return V[e.n];
+  case'a':{if(!(e.n in A))throw new E(e.n+' массив зарлагдаагүй байна',cl);const i=ev(e.i);if(!Number.isInteger(i)||i<0||i>=A[e.n].length)throw new E(e.n+'['+i+'] гэж элемент байхгүй: индекс 0-ээс '+(A[e.n].length-1)+' хооронд байх ёстой',cl);hi=i;return A[e.n][i]}
+  case'u':{const x=ev(e.e);return e.o==='-'?-x:+!x}
+  case'b':{const o=e.o;if(o==='&&')return+(ev(e.l)&&ev(e.r));if(o==='||')return+(ev(e.l)||ev(e.r));const a=ev(e.l),b=ev(e.r);
+   switch(o){case'+':return a+b;case'-':return a-b;case'*':return a*b;
+    case'/':case'%':if(!b)throw new E('0-д хуваах боломжгүй',cl);return o==='/'?Math.trunc(a/b):a%b;
+    case'<':return+(a<b);case'>':return+(a>b);case'<=':return+(a<=b);case'>=':return+(a>=b);case'==':return+(a==b);default:return+(a!=b)}}}};
+ const sh=tk=>tk.map((t,i)=>t.k==='id'&&t.v in V&&V[t.v]!==null&&!(tk[i+1]&&tk[i+1].v==='[')?V[t.v]:t.v).join(' ').replace(/ \[ /g,'[').replace(/ \]/g,']');
+ const asg=s=>{hi=null;
+  if(s.t==='dv'){V[s.n]=s.e?ev(s.e):null;return s.e?s.n+' = '+V[s.n]:s.n+' зарлагдлаа (анхны утга алга)'}
+  if(!(s.n in V))throw new E(s.n+' хувьсагч зарлагдаагүй байна',cl);
+  if(s.o==='=')V[s.n]=ev(s.e);else{const x=ev({t:'v',n:s.n}),r=s.e?ev(s.e):1;V[s.n]=s.o==='++'||s.o==='+='?x+r:s.o==='--'||s.o==='-='?x-r:x*r}
+  return s.n+' = '+V[s.n]};
+ const guard=()=>{if(++n>4000)throw new E('Хэт олон алхам: давталт төгсөхгүй байж магадгүй',cl)};
+ function* ex(L){for(const s of L){cl=s.line;hi=null;guard();
+  switch(s.t){
+  case'da':A[s.n]=s.v.map(ev);yield snap(s.line,s.n+' массив үүслээ');break;
+  case'dv':case'as':yield snap(s.line,asg(s));break;
+  case'out':{let t='';for(const x of s.l)t+=ev(x);out+=t;yield snap(s.line,'Дэлгэцэнд хэвлэв: '+t.trim());break}
+  case'if':{const c=ev(s.c);yield snap(s.line,sh(s.c.tk)+' → '+(c?'үнэн':'худал'));yield*ex(c?s.b:s.e);break}
+  case'for':{lv=s.ini.n;yield snap(s.line,asg(s.ini));
+   while(true){cl=s.line;hi=null;guard();const c=ev(s.c);yield snap(s.line,sh(s.c.tk)+' → '+(c?'үнэн':'худал: давталт дуусна'));if(!c)break;
+    yield*ex(s.b);cl=s.line;hi=null;yield snap(s.line,asg(s.u))}
+   break}
+  case'blk':yield*ex(s.b);break;
+  case'ret':return}}}
+ yield*ex(P)}
+
+let L=0,gen=null,last=null,timer=null;const done=new Set();
+function tabs(){$('tabs').innerHTML=LV.map((l,i)=>'<button class="'+(i===L?'on':'')+'" onclick="load('+i+')">'+(done.has(i)?'✔ ':'')+l.n+'</button>').join('')}
+function load(i){L=i;reset();$('code').value=LV[i].code;$('task').textContent=LV[i].t;$('hint').textContent='';tabs()}
+function edit(on){$('code').style.display=on?'block':'none';$('view').style.display=on?'none':'block'}
+function view(cur,err){const c=$('code').value.split('\n');$('view').innerHTML=c.map((s,i)=>'<span class="ln'+(i+1===cur?' cur':'')+(i+1===err?' err':'')+'">'+(esc(s)||' ')+'</span>').join('');edit(false)}
+function msg(t,c){$('msg').className=c||'';$('msg').textContent=t}
+function stop(){clearInterval(timer);timer=null}
+function reset(){stop();gen=null;last=null;edit(true);paint(null);msg('')}
+function paint(s){
+ if(!s){$('arr').innerHTML='<span class="mut">Ажиллуулахад массив энд харагдана.</span>';$('vars').innerHTML='';$('out').textContent='';return}
+ const ptr=s.lv?s.v[s.lv]:null;
+ $('arr').innerHTML=Object.entries(s.a).map(([nm,ar])=>{
+  const cells=ar.map((x,i)=>'<div class="cell'+(i===s.hi?' read':'')+(i===ptr?' ptr':'')+'"><div class="pt">'+(i===ptr?'▼ '+s.lv:'')+'</div><div class="box">'+x+'</div><div class="idx">'+i+'</div></div>').join('');
+  const ghost=ptr===ar.length?'<div class="cell ghost ptr"><div class="pt">▼ '+s.lv+'</div><div class="box">?</div><div class="idx">'+ar.length+'</div></div>':'';
+  return '<b>'+nm+'</b><div class="arr">'+cells+ghost+'</div>'}).join('');
+ $('vars').innerHTML=Object.entries(s.v).map(([k,x])=>'<span class="v">'+k+' = <b>'+(x===null?'?':x)+'</b></span>').join('');
+ $('out').textContent=s.out;view(s.line)}
+function start(){stop();try{gen=run(parse(tok($('code').value)));last=null;paint(null);return true}
+ catch(e){if(!(e instanceof E))throw e;gen=null;msg('Мөр '+e.line+': '+e.message,'bad');return false}}
+function step(){if(!gen&&!start())return false;
+ try{const r=gen.next();if(r.done){fin();return false}last=r.value;paint(last);msg('Мөр '+last.line+': '+last.msg);return true}
+ catch(e){if(!(e instanceof E))throw e;stop();gen=null;if(last)paint(last);view(0,e.line);msg('Мөр '+e.line+': '+e.message+'  («↺ Засах» товчоор кодоо засна)','bad');return false}}
+function play(){if(timer){stop();return}if(!gen&&!start())return;timer=setInterval(()=>{if(!step())stop()},+$('spd').value)}
+function fin(){stop();gen=null;const l=LV[L],o=(last?last.out:'').trim().split(/\s+/).join(' ');view(0);
+ if(l.exp==null)msg('Програм дууслаа.','ok');
+ else if(o===l.exp){done.add(L);tabs();msg('✔ Зөв! Гаралт: '+o,'ok')}
+ else msg('✖ Гаралт таарсангүй. Таны гаралт: «'+o+'». Хүлээгдэж буй: «'+l.exp+'».','bad')}
+load(0);
+</script></body></html>
